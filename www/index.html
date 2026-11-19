@@ -1,120 +1,819 @@
 ﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
-<title>Manifest Loop</title>
-<style>
-:root { --bg:#121110; --card:#1c1a18; --text:#f4efe6; --muted:#a89f91; --accent:#c8a97e; }
-* { box-sizing:border-box; margin:0; padding:0; }
-body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif; padding:calc(env(safe-area-inset-top) + 20px) 20px calc(env(safe-area-inset-bottom) + 28px); min-height:100vh; display:flex; flex-direction:column; justify-content:space-between; }
-.top { display:flex; justify-content:space-between; align-items:center; }
-.brand { font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--accent); }
-.btn-ghost { background:transparent; border:1px solid #332f2a; color:var(--text); padding:6px 12px; border-radius:999px; font-size:12px; }
-.card { background:var(--card); border:1px solid #2b2723; border-radius:24px; padding:28px 22px; margin:24px 0; }
-.tag { font-size:12px; color:var(--accent); margin-bottom:12px; }
-.prompt { font-size:22px; line-height:1.5; font-weight:500; min-height:96px; }
-.meta { margin-top:16px; font-size:13px; color:var(--muted); }
-.actions { display:flex; flex-direction:column; gap:12px; }
-.btn-primary { background:var(--accent); color:#141210; border:none; border-radius:16px; padding:16px; font-size:15px; font-weight:600; }
-.btn-secondary { background:#23201d; color:var(--text); border:1px solid #35302b; border-radius:16px; padding:14px; font-size:14px; }
-.status { text-align:center; font-size:12px; color:var(--muted); margin-top:10px; min-height:18px; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
+  <title>Manifest Loop · Sanctuary</title>
+  <style>
+    :root {
+      --bg: #121110;
+      --panel: #191715;
+      --card: #211e1b;
+      --text: #f3eee5;
+      --muted: #a69d8e;
+      --accent: #c8a97e;
+      --line: #302b26;
+      --soft: #282420;
+      --ok: #9eb398;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body.gentle-mode * { transition: none !important; animation: none !important; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans", "Helvetica Neue", sans-serif;
+      padding: calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 32px);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    .wrap { max-width: 580px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+    /* 顶部栏 */
+    .header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .brand-group { display: flex; flex-direction: column; }
+    .brand { font-size: 12px; letter-spacing: 2.4px; color: var(--accent); font-weight: 600; }
+    .sub-brand { font-size: 11px; color: var(--muted); }
+    .top-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .pill-btn, .lang-select {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      outline: none;
+    }
+    .pill-btn.active { border-color: var(--accent); color: var(--accent); }
+    /* 已发生痕迹墙（无断签惩罚的正向回流） */
+    .trace-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px 10px;
+      text-align: center;
+    }
+    .trace-num { font-size: 16px; font-weight: 600; color: var(--accent); }
+    .trace-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    /* 主导航 */
+    .nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      background: var(--panel);
+      padding: 5px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+    }
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 9px 4px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .nav-btn.active { background: var(--accent); color: #151311; font-weight: 600; }
+    /* 容器与卡片 */
+    .box {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .spark-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      transition: transform 0.18s ease;
+    }
+    .spark-card.tap { transform: scale(0.988); }
+    .kicker { font-size: 11px; color: var(--accent); margin-bottom: 8px; letter-spacing: 0.6px; display: flex; justify-content: space-between; }
+    .quote { font-size: 18px; line-height: 1.55; font-weight: 500; }
+    .quote-sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
+    .step-hint { margin-top: 10px; padding-top: 10px; border-top: 1px solid #2c2722; font-size: 13px; color: var(--ok); }
+    .input, .textarea, .select {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 11px 12px;
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+    }
+    .textarea { min-height: 78px; resize: vertical; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .row > * { flex: 1; min-width: 115px; }
+    .btn-primary {
+      background: var(--accent);
+      color: #151311;
+      border: none;
+      border-radius: 13px;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .btn-sub {
+      background: var(--soft);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 11px 13px;
+      font-size: 13px;
+    }
+    .btn-xs {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 11px;
+    }
+    .feed-item {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .feed-top { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted); gap: 8px; }
+    .badge {
+      display: inline-block;
+      background: rgba(200, 169, 126, 0.14);
+      color: var(--accent);
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+    }
+    .feed-img {
+      width: 100%;
+      max-height: 240px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+    }
+    .feed-text { font-size: 14px; line-height: 1.55; white-space: pre-wrap; }
+    .wish-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .wish-title { font-size: 14px; font-weight: 500; }
+    .wish-done { text-decoration: line-through; color: var(--muted); }
+    .summary-bar {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 9px 12px;
+      background: var(--card);
+      border-radius: 12px;
+    }
+    /* 底部基础工具与合规栏 */
+    .footer-tools {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding-top: 4px;
+    }
+    .notice { font-size: 12px; color: var(--muted); text-align: center; min-height: 18px; }
+    .modal-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 50;
+    }
+    .modal-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 20px;
+      max-width: 460px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .modal-title { font-size: 16px; color: var(--text); font-weight: 600; }
+    .hidden { display: none !important; }
+  </style>
 </head>
 <body>
-<div>
-<div class="top">
-  <div class="brand">MANIFEST LOOP</div>
-  <button class="btn-ghost" id="langBtn">EN / 中文</button>
-</div>
-<div class="card">
-  <div class="tag" id="tagText">第 1 轮 · 潜意识觉察</div>
-  <div class="prompt" id="promptText">我保持清晰的注意力与从容的节奏，把每一个微小承诺兑现为现实。</div>
-  <div class="meta" id="streakText">已完成循环：0 次</div>
-</div>
-</div>
-<div>
-<div class="actions">
-  <button class="btn-primary" id="completeBtn">完成本次显化闭环</button>
-  <button class="btn-secondary" id="remindBtn">开启每日 08:30 觉察提醒</button>
-</div>
-<div class="status" id="statusText">离线本地存储已就绪</div>
-</div>
-<script>
-const loops = [
-  { zh: "我保持清晰的注意力与从容的节奏，把每一个微小承诺兑现为现实。", en: "I hold clear attention and a calm rhythm, turning each small commitment into reality." },
-  { zh: "在安静与秩序之中，我看清真正重要的优先级并稳步推进。", en: "Within stillness and order, I see true priorities clearly and move forward steadily." },
-  { zh: "我的行动与长期目标保持一致，每一次选择都在积累复利。", en: "My actions align with my long-term direction, and every choice compounds." }
-];
-let lang = localStorage.getItem("ml_lang") || "zh";
-let idx = Number(localStorage.getItem("ml_idx") || "0");
-let count = Number(localStorage.getItem("ml_count") || "0");
-function getCapPlugins() {
-  const cap = window.Capacitor;
-  return {
-    Haptics: cap && cap.Plugins && cap.Plugins.Haptics ? cap.Plugins.Haptics : null,
-    LocalNotifications: cap && cap.Plugins && cap.Plugins.LocalNotifications ? cap.Plugins.LocalNotifications : null
-  };
-}
-async function pulseHaptic() {
-  try {
-    const { Haptics } = getCapPlugins();
-    if (Haptics) await Haptics.impact({ style: "MEDIUM" });
-  } catch (_) {}
-}
-function render() {
-  const item = loops[idx % loops.length];
-  document.getElementById("langBtn").textContent = lang === "zh" ? "EN" : "中文";
-  document.getElementById("tagText").textContent = lang === "zh"
-    ? `第 ${(idx % loops.length) + 1} 轮 · 潜意识觉察`
-    : `LOOP ${(idx % loops.length) + 1} · MINDFUL FOCUS`;
-  document.getElementById("promptText").textContent = lang === "zh" ? item.zh : item.en;
-  document.getElementById("streakText").textContent = lang === "zh"
-    ? `已完成循环：${count} 次`
-    : `Completed Loops: ${count}`;
-  document.getElementById("completeBtn").textContent = lang === "zh" ? "完成本次显化闭环" : "Complete Loop";
-  document.getElementById("remindBtn").textContent = lang === "zh" ? "开启每日 08:30 觉察提醒" : "Set Daily 08:30 Reminder";
-}
-document.getElementById("langBtn").addEventListener("click", async () => {
-  lang = lang === "zh" ? "en" : "zh";
-  localStorage.setItem("ml_lang", lang);
-  await pulseHaptic();
-  render();
-});
-document.getElementById("completeBtn").addEventListener("click", async () => {
-  count += 1;
-  idx += 1;
-  localStorage.setItem("ml_count", String(count));
-  localStorage.setItem("ml_idx", String(idx));
-  await pulseHaptic();
-  render();
-  document.getElementById("statusText").textContent = lang === "zh" ? "已记录到本地并切换下一条" : "Saved locally & advanced";
-});
-document.getElementById("remindBtn").addEventListener("click", async () => {
-  await pulseHaptic();
-  const { LocalNotifications } = getCapPlugins();
-  if (!LocalNotifications) {
-    document.getElementById("statusText").textContent = lang === "zh" ? "浏览器预览模式：上架 iOS 后将调用本地提醒" : "Web preview: native alarm runs on iOS";
-    return;
-  }
-  try {
-    const perm = await LocalNotifications.requestPermissions();
-    if (perm.display === "granted") {
-      await LocalNotifications.schedule({
-        notifications: [{
-          id: 1001,
-          title: "Manifest Loop",
-          body: lang === "zh" ? "开启今天的显化觉察循环" : "Start your daily mindful loop",
-          schedule: { on: { hour: 8, minute: 30 }, repeats: true }
-        }]
-      });
-      document.getElementById("statusText").textContent = lang === "zh" ? "已设置每日 08:30 本地提醒" : "Daily 08:30 reminder scheduled";
+  <div class="wrap">
+    <!-- 顶部栏与多重语言模式 -->
+    <div class="header">
+      <div class="brand-group">
+        <div class="brand">MANIFEST LOOP</div>
+        <div class="sub-brand" id="subBrandText">低噪觉察与微行动空间</div>
+      </div>
+      <div class="top-actions">
+        <button class="pill-btn" id="gentleBtn">低敏模式</button>
+        <select class="lang-select" id="langSelect" aria-label="多重语言模式">
+          <option value="zh">多重语言：中文</option>
+          <option value="bilingual">多重语言：中英对照</option>
+          <option value="en">Language: English</option>
+          <option value="ja">多言語：日本語</option>
+        </select>
+      </div>
+    </div>
+    <!-- 已发生痕迹墙（累积正向反馈，零断签惩罚） -->
+    <div class="trace-bar">
+      <div>
+        <div class="trace-num" id="statMoments">0</div>
+        <div class="trace-label" id="lblStatMoments">微成效</div>
+      </div>
+      <div>
+        <div class="trace-num" id="statWishes">0</div>
+        <div class="trace-label" id="lblStatWishes">已迈步</div>
+      </div>
+      <div>
+        <div class="trace-num" id="statDiary">0</div>
+        <div class="trace-label" id="lblStatDiary">生日记</div>
+      </div>
+      <div>
+        <div class="trace-num" id="statLedger">0</div>
+        <div class="trace-label" id="lblStatLedger">安心账</div>
+      </div>
+    </div>
+    <!-- 四维空间导航 -->
+    <div class="nav">
+      <button class="nav-btn active" data-tab="moments" id="navMoments">动态与行动</button>
+      <button class="nav-btn" data-tab="ledger" id="navLedger">微账本</button>
+      <button class="nav-btn" data-tab="wishes" id="navWishes">愿望清单</button>
+      <button class="nav-btn" data-tab="diary" id="navDiary">生日记</button>
+    </div>
+    <!-- 1. 动态与行动 -->
+    <section id="tab-moments" class="box">
+      <div class="spark-card" id="sparkCard">
+        <div class="kicker">
+          <span id="sparkKicker">温柔行动引子</span>
+          <span id="sparkCounter">1 / 6</span>
+        </div>
+        <div class="quote" id="sparkQuote"></div>
+        <div class="quote-sub hidden" id="sparkQuoteSub"></div>
+        <div class="step-hint" id="sparkStep"></div>
+        <div class="row" style="margin-top:12px;">
+          <button class="btn-sub" id="nextSparkBtn">换一句引子</button>
+          <button class="btn-primary" id="takeActionBtn">转为今日动态</button>
+        </div>
+      </div>
+      <textarea class="textarea" id="momentText" placeholder="记录此刻的一个小瞬间、图文或微小成效（自动保存草稿，仅存本地）..."></textarea>
+      <div class="row">
+        <select class="select" id="momentTag">
+          <option value="微小成效">成效：迈出一步</option>
+          <option value="情绪回稳">状态：情绪回稳</option>
+          <option value="安静独处">氛围：安静独处</option>
+          <option value="生活秩序">秩序：理顺一件小事</option>
+        </select>
+        <input class="input" type="file" id="momentPhoto" accept="image/*" />
+      </div>
+      <button class="btn-primary" id="postMomentBtn">发布到我的私密动态</button>
+      <div id="momentList" class="box" style="padding:0; border:none; background:transparent;"></div>
+    </section>
+    <!-- 2. 微账本 -->
+    <section id="tab-ledger" class="box hidden">
+      <div class="summary-bar">
+        <span id="ledgerCountLabel">记录数：0</span>
+        <span id="ledgerSumLabel">累计投入：¥0.00</span>
+      </div>
+      <div class="row">
+        <input class="input" id="ledgerTitle" placeholder="项目（如：热饮 / 书籍 / 整理收纳）" />
+        <input class="input" id="ledgerAmount" type="number" step="0.01" placeholder="金额" />
+      </div>
+      <div class="row">
+        <select class="select" id="ledgerCat">
+          <option value="生活秩序">类别：生活秩序</option>
+          <option value="自我滋养">类别：自我滋养</option>
+          <option value="工具与成长">类别：工具与成长</option>
+          <option value="日常必需">类别：日常必需</option>
+        </select>
+        <input class="input" id="ledgerNote" placeholder="这笔投入带来的踏实感（可选）" />
+      </div>
+      <button class="btn-primary" id="addLedgerBtn">记入微账本</button>
+      <div id="ledgerList" class="box" style="padding:0; border:none; background:transparent;"></div>
+    </section>
+    <!-- 3. 愿望清单 -->
+    <section id="tab-wishes" class="box hidden">
+      <input class="input" id="wishTitle" placeholder="写下一个愿望或想推进的目标..." />
+      <input class="input" id="wishStep" placeholder="2 分钟起手一步（例如：先打开文档写 3 行）" />
+      <button class="btn-primary" id="addWishBtn">加入愿望清单</button>
+      <div id="wishList" class="box" style="padding:0; border:none; background:transparent;"></div>
+    </section>
+    <!-- 4. 生日记 -->
+    <section id="tab-diary" class="box hidden">
+      <div class="row">
+        <select class="select" id="diaryMood">
+          <option value="澄澈平稳">状态：澄澈平稳</option>
+          <option value="高敏紧绷">状态：高敏紧绷</option>
+          <option value="低能量需休整">状态：低能量需休整</option>
+          <option value="踏实回温">状态：踏实回温</option>
+        </select>
+        <input class="input" type="date" id="diaryDate" />
+      </div>
+      <textarea class="textarea" id="diaryContent" placeholder="写下今天的生日记：哪里被触动、理顺了什么、想对今天的自己说什么..."></textarea>
+      <button class="btn-primary" id="saveDiaryBtn">保存这篇生日记</button>
+      <div id="diaryList" class="box" style="padding:0; border:none; background:transparent;"></div>
+    </section>
+    <!-- 底部：隐私合规说明、本地提醒与数据备份 -->
+    <div class="footer-tools">
+      <button class="btn-xs" id="remindBtn">每日 08:30 轻提醒</button>
+      <button class="btn-xs" id="exportBtn">导出本地备份</button>
+      <button class="btn-xs" id="aboutBtn">隐私与使用说明</button>
+    </div>
+    <div class="notice" id="noticeBar">所有数据仅保存在当前设备本地 · 无社交比较与红点催促</div>
+  </div>
+  <!-- App Store 审核必备：隐私政策与非医疗辅助边界弹窗 -->
+  <div class="modal-mask hidden" id="aboutModal">
+    <div class="modal-card">
+      <div class="modal-title">隐私声明与使用边界</div>
+      <div>1. <strong>本地优先与隐私保护：</strong>你在 Manifest Loop 中记录的图文动态、微账本、愿望清单与生日记均仅存储在当前设备的本地存储中，不上传至任何第三方服务器，也不会用于画像追踪。</div>
+      <div>2. <strong>非医疗声明：</strong>本应用为日常情绪觉察、生活手账与温和行动辅助工具，不提供医学诊断、心理治疗或医疗建议。如正经历持续的心理或情绪困扰，请及时寻求专业医生或心理咨询师的帮助。</div>
+      <div>3. <strong>支持与联系：</strong>如有反馈或支持需求，可通过官方支持页面联系开发者。</div>
+      <button class="btn-primary" id="closeAboutBtn">我知道了</button>
+    </div>
+  </div>
+  <script>
+    const sparks = [
+      {
+        zh: "不必等状态满分才开始，先做 2 分钟最轻的一步。",
+        en: "You do not need full energy to begin; take one light two-minute step.",
+        ja: "完璧な状態を待たなくていい。まずは2分だけの軽い一歩から。",
+        stepZh: "微行动：挑一件 2 分钟内能起头的小事，做完就允许自己停下。",
+        stepEn: "Micro-step: Pick a 2-minute starter action, then allow yourself to pause.",
+        stepJa: "小さな一歩：2分で始められることを一つだけやり、終わったら休んでいい。"
+      },
+      {
+        zh: "敏感不是缺陷，而是能更早察觉细节与节奏的雷达。",
+        en: "Sensitivity is not a flaw; it is an early radar for nuance and rhythm.",
+        ja: "繊細さは欠点ではなく、微細な変化と自分のリズムに気づくレーダー。",
+        stepZh: "微行动：关掉一个制造噪音的提示，给自己留 3 分钟安静。",
+        stepEn: "Micro-step: Silence one noisy alert and claim three quiet minutes.",
+        stepJa: "小さな一歩：通知を一つオフにして、3分間の静けさをつくる。"
+      },
+      {
+        zh: "把模糊的想法落到纸面上，就是在替心绪腾出呼吸空间。",
+        en: "Putting vague thoughts onto paper clears breathing room in your mind.",
+        ja: "曖昧な思考を書き出すだけで、心の中に呼吸する余白が生まれる。",
+        stepZh: "微行动：把脑子里打转的一件事写成一句话，先安放好。",
+        stepEn: "Micro-step: Write down one looping thought in a single calm sentence.",
+        stepJa: "小さな一歩：頭の中で回っていることを一行だけ書き留める。"
+      },
+      {
+        zh: "稳步推进比一时冲动更可靠，节奏完全由你自己决定。",
+        en: "Steady pacing beats sudden bursts; your rhythm belongs entirely to you.",
+        ja: "一時的な勢いより、静かな積み重ねのほうが確か。ペースは自分で決めていい。",
+        stepZh: "微行动：确认今天只需要完成的一件核心微事。",
+        stepEn: "Micro-step: Choose just one core small thing that is enough for today.",
+        stepJa: "小さな一歩：今日これだけできれば十分という小さな一つを決める。"
+      },
+      {
+        zh: "照顾好自己的能量边界，才有余力去承接真正喜欢的事。",
+        en: "Protecting your energy boundaries leaves room for what truly matters.",
+        ja: "自分のエネルギーの境界線を守ることで、本当に大切なことを受け取れる。",
+        stepZh: "微行动：喝一口温水或热饮，让肩膀和下颌慢慢松下来。",
+        stepEn: "Micro-step: Sip something warm and let your shoulders and jaw unclench.",
+        stepJa: "小さな一歩：温かい飲み物を一口飲み、肩と顎の力を抜く。"
+      },
+      {
+        zh: "允许自己慢一点，每一次微小的兑现都在积累自我信任。",
+        en: "Allow yourself to go slowly; every small follow-through builds self-trust.",
+        ja: "ゆっくり進んでも大丈夫。小さな約束を守るたびに自己信頼が育つ。",
+        stepZh: "微行动：在愿望清单里勾选或写下一件已经做到的小事。",
+        stepEn: "Micro-step: Log or check off one small thing you already followed through on.",
+        stepJa: "小さな一歩：すでにできた小さなことを一つ記録してみる。"
+      }
+    ];
+    const i18n = {
+      zh: {
+        subBrand: "低噪觉察与微行动空间",
+        gentleOff: "低敏模式",
+        gentleOn: "低敏模式：开",
+        sMoments: "微成效", sWishes: "已迈步", sDiary: "生日记", sLedger: "安心账",
+        navMoments: "动态与行动", navLedger: "微账本", navWishes: "愿望清单", navDiary: "生日记",
+        kicker: "温柔行动引子", nextSpark: "换一句引子", takeAction: "转为今日动态",
+        postBtn: "发布到我的私密动态", addLedger: "记入微账本", addWish: "加入愿望清单", saveDiary: "保存这篇生日记",
+        remind: "每日 08:30 轻提醒", export: "导出本地备份", about: "隐私与使用说明"
+      },
+      bilingual: {
+        subBrand: "Low-Stimulus Sanctuary · 低噪觉察空间",
+        gentleOff: "低敏 / Gentle",
+        gentleOn: "低敏：开 / On",
+        sMoments: "Moments", sWishes: "Steps", sDiary: "Diary", sLedger: "Ledger",
+        navMoments: "动态 · Feed", navLedger: "微账本 · Ledger", navWishes: "愿望 · Wishes", navDiary: "生日记 · Diary",
+        kicker: "GENTLE SPARK · 行动引子", nextSpark: "换一句 / Next", takeAction: "转为动态 / Use",
+        postBtn: "发布私密动态 · Post", addLedger: "记入微账本 · Log", addWish: "加入清单 · Add Wish", saveDiary: "保存日记 · Save",
+        remind: "08:30 提醒 / Alert", export: "备份 / Backup", about: "隐私说明 / Privacy"
+      },
+      en: {
+        subBrand: "Low-Stimulus Sanctuary & Micro-Action",
+        gentleOff: "Gentle Mode",
+        gentleOn: "Gentle: ON",
+        sMoments: "Moments", sWishes: "Steps", sDiary: "Diary", sLedger: "Ledger",
+        navMoments: "Feed & Action", navLedger: "Micro Ledger", navWishes: "Wish List", navDiary: "Life Diary",
+        kicker: "GENTLE ACTION SPARK", nextSpark: "Next Spark", takeAction: "Turn into Post",
+        postBtn: "Save Private Moment", addLedger: "Log Entry", addWish: "Add to Wish List", saveDiary: "Save Diary Entry",
+        remind: "08:30 Daily Alert", export: "Export Backup", about: "Privacy & Scope"
+      },
+      ja: {
+        subBrand: "静かな気づきと小さな行動の空間",
+        gentleOff: "低刺激モード",
+        gentleOn: "低刺激：オン",
+        sMoments: "小さな前進", sWishes: "一歩完了", sDiary: "日々日記", sLedger: "安心メモ",
+        navMoments: "記録と行動", navLedger: "ミニ家計簿", navWishes: "願いリスト", navDiary: "日々日記",
+        kicker: "やさしい行動のヒント", nextSpark: "別の言葉", takeAction: "記録に使う",
+        postBtn: "プライベート記録を残す", addLedger: "メモに追加", addWish: "リストに追加", saveDiary: "日記を保存",
+        remind: "毎日 08:30 通知", export: "バックアップ", about: "プライバシー"
+      }
+    };
+    let langMode = localStorage.getItem("ml_v3_lang") || "zh";
+    let gentle = localStorage.getItem("ml_v3_gentle") === "1";
+    let sparkIdx = Number(localStorage.getItem("ml_v3_spark") || "0");
+    let recentSparks = [];
+    let pendingPhotoData = "";
+    let moments = JSON.parse(localStorage.getItem("ml_v3_moments") || "[]");
+    let ledgers = JSON.parse(localStorage.getItem("ml_v3_ledgers") || "[]");
+    let wishes = JSON.parse(localStorage.getItem("ml_v3_wishes") || "[]");
+    let diaries = JSON.parse(localStorage.getItem("ml_v3_diaries") || "[]");
+    document.getElementById("langSelect").value = langMode;
+    document.getElementById("diaryDate").value = new Date().toISOString().slice(0, 10);
+    document.getElementById("momentText").value = localStorage.getItem("ml_v3_draft_moment") || "";
+    document.getElementById("diaryContent").value = localStorage.getItem("ml_v3_draft_diary") || "";
+    function saveAll() {
+      try {
+        localStorage.setItem("ml_v3_moments", JSON.stringify(moments));
+        localStorage.setItem("ml_v3_ledgers", JSON.stringify(ledgers));
+        localStorage.setItem("ml_v3_wishes", JSON.stringify(wishes));
+        localStorage.setItem("ml_v3_diaries", JSON.stringify(diaries));
+      } catch (e) {
+        showNotice("本地空间接近上限，建议先导出备份后再清理旧图片");
+      }
     }
-  } catch (e) {
-    document.getElementById("statusText").textContent = String(e.message || e);
-  }
-});
-render();
-</script>
+    async function gentlePulse() {
+      if (gentle) return;
+      try {
+        const h = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics;
+        if (h) await h.impact({ style: "LIGHT" });
+      } catch (_) {}
+    }
+    function showNotice(msg) {
+      document.getElementById("noticeBar").textContent = msg;
+    }
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    }
+    function applyUI() {
+      const t = i18n[langMode] || i18n.zh;
+      document.body.classList.toggle("gentle-mode", gentle);
+      const gBtn = document.getElementById("gentleBtn");
+      gBtn.classList.toggle("active", gentle);
+      gBtn.textContent = gentle ? t.gentleOn : t.gentleOff;
+      document.getElementById("subBrandText").textContent = t.subBrand;
+      document.getElementById("lblStatMoments").textContent = t.sMoments;
+      document.getElementById("lblStatWishes").textContent = t.sWishes;
+      document.getElementById("lblStatDiary").textContent = t.sDiary;
+      document.getElementById("lblStatLedger").textContent = t.sLedger;
+      document.getElementById("navMoments").textContent = t.navMoments;
+      document.getElementById("navLedger").textContent = t.navLedger;
+      document.getElementById("navWishes").textContent = t.navWishes;
+      document.getElementById("navDiary").textContent = t.navDiary;
+      document.getElementById("sparkKicker").textContent = t.kicker;
+      document.getElementById("nextSparkBtn").textContent = t.nextSpark;
+      document.getElementById("takeActionBtn").textContent = t.takeAction;
+      document.getElementById("postMomentBtn").textContent = t.postBtn;
+      document.getElementById("addLedgerBtn").textContent = t.addLedger;
+      document.getElementById("addWishBtn").textContent = t.addWish;
+      document.getElementById("saveDiaryBtn").textContent = t.saveDiary;
+      document.getElementById("remindBtn").textContent = t.remind;
+      document.getElementById("exportBtn").textContent = t.export;
+      document.getElementById("aboutBtn").textContent = t.about;
+      renderSpark();
+      renderStats();
+      renderMoments();
+      renderLedger();
+      renderWishes();
+      renderDiaries();
+    }
+    function renderStats() {
+      document.getElementById("statMoments").textContent = String(moments.length);
+      document.getElementById("statWishes").textContent = String(wishes.filter(w => w.done).length);
+      document.getElementById("statDiary").textContent = String(diaries.length);
+      document.getElementById("statLedger").textContent = String(ledgers.length);
+    }
+    function renderSpark() {
+      const s = sparks[sparkIdx % sparks.length];
+      const subEl = document.getElementById("sparkQuoteSub");
+      document.getElementById("sparkCounter").textContent = `${(sparkIdx % sparks.length) + 1} / ${sparks.length}`;
+      if (langMode === "bilingual") {
+        document.getElementById("sparkQuote").textContent = s.zh;
+        subEl.textContent = s.en;
+        subEl.classList.remove("hidden");
+        document.getElementById("sparkStep").textContent = `${s.stepZh} / ${s.stepEn}`;
+      } else if (langMode === "en") {
+        document.getElementById("sparkQuote").textContent = s.en;
+        subEl.classList.add("hidden");
+        document.getElementById("sparkStep").textContent = s.stepEn;
+      } else if (langMode === "ja") {
+        document.getElementById("sparkQuote").textContent = s.ja;
+        subEl.classList.add("hidden");
+        document.getElementById("sparkStep").textContent = s.stepJa;
+      } else {
+        document.getElementById("sparkQuote").textContent = s.zh;
+        subEl.classList.add("hidden");
+        document.getElementById("sparkStep").textContent = s.stepZh;
+      }
+    }
+    function renderMoments() {
+      const el = document.getElementById("momentList");
+      if (!moments.length) {
+        el.innerHTML = `<div class="feed-item"><div class="feed-text" style="color:var(--muted);">还没有私密动态。记下一张此刻的画面或一件微小成效吧。</div></div>`;
+        return;
+      }
+      el.innerHTML = moments.map((m, idx) => `
+        <div class="feed-item">
+          <div class="feed-top">
+            <span>${escapeHtml(m.time)} · <span class="badge">${escapeHtml(m.tag)}</span></span>
+            <button class="btn-xs" onclick="removeItem('moments', ${idx})">收起</button>
+          </div>
+          ${m.photo ? `<img class="feed-img" src="${m.photo}" alt="moment" />` : ""}
+          <div class="feed-text">${escapeHtml(m.text)}</div>
+        </div>
+      `).join("");
+    }
+    function renderLedger() {
+      const sum = ledgers.reduce((acc, x) => acc + (Number(x.amount) || 0), 0);
+      document.getElementById("ledgerCountLabel").textContent = `记录数：${ledgers.length}`;
+      document.getElementById("ledgerSumLabel").textContent = `累计投入：¥${sum.toFixed(2)}`;
+      const el = document.getElementById("ledgerList");
+      if (!ledgers.length) {
+        el.innerHTML = `<div class="feed-item"><div class="feed-text" style="color:var(--muted);">微账本还是空的，记下一笔换来安心或秩序的投入。</div></div>`;
+        return;
+      }
+      el.innerHTML = ledgers.map((item, idx) => `
+        <div class="feed-item">
+          <div class="feed-top">
+            <span>${escapeHtml(item.time)} · <span class="badge">${escapeHtml(item.cat || "生活秩序")}</span></span>
+            <span><strong>¥${Number(item.amount).toFixed(2)}</strong> <button class="btn-xs" onclick="removeItem('ledgers', ${idx})">删</button></span>
+          </div>
+          <div class="feed-text"><strong>${escapeHtml(item.title)}</strong>${item.note ? ` · <span style="color:var(--muted);">${escapeHtml(item.note)}</span>` : ""}</div>
+        </div>
+      `).join("");
+    }
+    function renderWishes() {
+      const el = document.getElementById("wishList");
+      if (!wishes.length) {
+        el.innerHTML = `<div class="feed-item"><div class="feed-text" style="color:var(--muted);">写下一个愿望，再配上今天 2 分钟就能起手的一步。</div></div>`;
+        return;
+      }
+      el.innerHTML = wishes.map((w, i) => `
+        <div class="feed-item">
+          <div class="wish-row">
+            <div>
+              <div class="wish-title ${w.done ? "wish-done" : ""}">${escapeHtml(w.title)}</div>
+              ${w.step ? `<div class="step-hint" style="margin-top:6px;padding-top:6px;">起手一步：${escapeHtml(w.step)}</div>` : ""}
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <button class="btn-sub" onclick="toggleWish(${i})">${w.done ? "已兑现" : "迈出一步"}</button>
+              <button class="btn-xs" onclick="removeItem('wishes', ${i})">删</button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+    function renderDiaries() {
+      const el = document.getElementById("diaryList");
+      if (!diaries.length) {
+        el.innerHTML = `<div class="feed-item"><div class="feed-text" style="color:var(--muted);">还没有生日记。把脑海里打转的情绪和生活片段安放在这里。</div></div>`;
+        return;
+      }
+      el.innerHTML = diaries.map((d, idx) => `
+        <div class="feed-item">
+          <div class="feed-top">
+            <span>${escapeHtml(d.date)} · <span class="badge">${escapeHtml(d.mood)}</span></span>
+            <button class="btn-xs" onclick="removeItem('diaries', ${idx})">删</button>
+          </div>
+          <div class="feed-text">${escapeHtml(d.content)}</div>
+        </div>
+      `).join("");
+    }
+    window.toggleWish = async function(idx) {
+      wishes[idx].done = !wishes[idx].done;
+      saveAll();
+      renderStats();
+      renderWishes();
+      await gentlePulse();
+      showNotice(wishes[idx].done ? "这一步已经兑现，算入你的成长痕迹" : "已恢复为进行中");
+    };
+    window.removeItem = async function(type, idx) {
+      if (type === "moments") moments.splice(idx, 1);
+      if (type === "ledgers") ledgers.splice(idx, 1);
+      if (type === "wishes") wishes.splice(idx, 1);
+      if (type === "diaries") diaries.splice(idx, 1);
+      saveAll();
+      applyUI();
+      await gentlePulse();
+      showNotice("已更新本地记录");
+    };
+    // 图片自动压缩，防止超出 localStorage 容量
+    function compressImage(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            const maxW = 900;
+            const scale = img.width > maxW ? maxW / img.width : 1;
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.72));
+          };
+          img.onerror = () => resolve(String(ev.target.result || ""));
+          img.src = String(ev.target.result || "");
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    document.querySelectorAll(".nav-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const tab = btn.dataset.tab;
+        ["moments", "ledger", "wishes", "diary"].forEach(t => {
+          document.getElementById("tab-" + t).classList.toggle("hidden", t !== tab);
+        });
+        await gentlePulse();
+      });
+    });
+    document.getElementById("langSelect").addEventListener("change", async (e) => {
+      langMode = e.target.value;
+      localStorage.setItem("ml_v3_lang", langMode);
+      await gentlePulse();
+      applyUI();
+      showNotice("已切换多重语言模式");
+    });
+    document.getElementById("gentleBtn").addEventListener("click", () => {
+      gentle = !gentle;
+      localStorage.setItem("ml_v3_gentle", gentle ? "1" : "0");
+      applyUI();
+      showNotice(gentle ? "已开启低敏模式，关闭震动与多余动效" : "已恢复标准轻触感模式");
+    });
+    document.getElementById("nextSparkBtn").addEventListener("click", async () => {
+      const candidates = sparks.map((_, i) => i).filter(i => i !== sparkIdx && !recentSparks.includes(i));
+      const pool = candidates.length ? candidates : sparks.map((_, i) => i).filter(i => i !== sparkIdx);
+      sparkIdx = pool[Math.floor(Math.random() * pool.length)];
+      recentSparks.push(sparkIdx);
+      if (recentSparks.length > 3) recentSparks.shift();
+      localStorage.setItem("ml_v3_spark", String(sparkIdx));
+      const card = document.getElementById("sparkCard");
+      card.classList.add("tap");
+      setTimeout(() => card.classList.remove("tap"), 160);
+      renderSpark();
+      await gentlePulse();
+    });
+    document.getElementById("takeActionBtn").addEventListener("click", async () => {
+      const q = document.getElementById("sparkQuote").textContent;
+      const st = document.getElementById("sparkStep").textContent;
+      const box = document.getElementById("momentText");
+      box.value = `${q}\n${st}`;
+      localStorage.setItem("ml_v3_draft_moment", box.value);
+      await gentlePulse();
+      showNotice("已填入动态草稿框，可直接发布或补充感想");
+    });
+    document.getElementById("momentText").addEventListener("input", (e) => {
+      localStorage.setItem("ml_v3_draft_moment", e.target.value);
+    });
+    document.getElementById("diaryContent").addEventListener("input", (e) => {
+      localStorage.setItem("ml_v3_draft_diary", e.target.value);
+    });
+    document.getElementById("momentPhoto").addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) { pendingPhotoData = ""; return; }
+      showNotice("正在轻量化处理图片...");
+      pendingPhotoData = await compressImage(file);
+      showNotice("图片已就绪，点击发布即可保存");
+    });
+    document.getElementById("postMomentBtn").addEventListener("click", async () => {
+      const text = document.getElementById("momentText").value.trim();
+      if (!text && !pendingPhotoData) return;
+      const tag = document.getElementById("momentTag").value;
+      const now = new Date().toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      moments.unshift({ text: text || "留下一张安静的画面", tag, photo: pendingPhotoData, time: now });
+      document.getElementById("momentText").value = "";
+      document.getElementById("momentPhoto").value = "";
+      localStorage.removeItem("ml_v3_draft_moment");
+      pendingPhotoData = "";
+      saveAll();
+      applyUI();
+      await gentlePulse();
+      showNotice("已安放到你的私密动态中");
+    });
+    document.getElementById("addLedgerBtn").addEventListener("click", async () => {
+      const title = document.getElementById("ledgerTitle").value.trim();
+      const amount = parseFloat(document.getElementById("ledgerAmount").value);
+      const cat = document.getElementById("ledgerCat").value;
+      const note = document.getElementById("ledgerNote").value.trim();
+      if (!title || isNaN(amount)) return;
+      const time = new Date().toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" });
+      ledgers.unshift({ title, amount, cat, note, time });
+      document.getElementById("ledgerTitle").value = "";
+      document.getElementById("ledgerAmount").value = "";
+      document.getElementById("ledgerNote").value = "";
+      saveAll();
+      applyUI();
+      await gentlePulse();
+      showNotice("已记入微账本");
+    });
+    document.getElementById("addWishBtn").addEventListener("click", async () => {
+      const title = document.getElementById("wishTitle").value.trim();
+      const step = document.getElementById("wishStep").value.trim();
+      if (!title) return;
+      wishes.unshift({ title, step, done: false });
+      document.getElementById("wishTitle").value = "";
+      document.getElementById("wishStep").value = "";
+      saveAll();
+      applyUI();
+      await gentlePulse();
+      showNotice("已加入愿望清单，随时迈出最小一步");
+    });
+    document.getElementById("saveDiaryBtn").addEventListener("click", async () => {
+      const content = document.getElementById("diaryContent").value.trim();
+      if (!content) return;
+      const date = document.getElementById("diaryDate").value || new Date().toISOString().slice(0, 10);
+      const mood = document.getElementById("diaryMood").value;
+      diaries.unshift({ date, mood, content });
+      document.getElementById("diaryContent").value = "";
+      localStorage.removeItem("ml_v3_draft_diary");
+      saveAll();
+      applyUI();
+      await gentlePulse();
+      showNotice("已保存这篇生日记");
+    });
+    document.getElementById("exportBtn").addEventListener("click", async () => {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        moments,
+        ledgers,
+        wishes,
+        diaries
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `manifest-loop-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      await gentlePulse();
+      showNotice("已导出本地 JSON 备份文件");
+    });
+    document.getElementById("aboutBtn").addEventListener("click", () => {
+      document.getElementById("aboutModal").classList.remove("hidden");
+    });
+    document.getElementById("closeAboutBtn").addEventListener("click", () => {
+      document.getElementById("aboutModal").classList.add("hidden");
+    });
+    document.getElementById("remindBtn").addEventListener("click", async () => {
+      await gentlePulse();
+      const ln = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+      if (!ln) {
+        showNotice("浏览器预览模式：安装到 iPhone 后将开启每日 08:30 本地轻提醒");
+        return;
+      }
+      try {
+        const perm = await ln.requestPermissions();
+        if (perm.display === "granted") {
+          await ln.schedule({
+            notifications: [{
+              id: 1001,
+              title: "Manifest Loop",
+              body: "留两分钟给自己，挑一件轻盈的小事开始",
+              schedule: { on: { hour: 8, minute: 30 }, repeats: true }
+            }]
+          });
+          showNotice("已开启每日 08:30 本地轻提醒");
+        }
+      } catch (e) {
+        showNotice(String(e.message || e));
+      }
+    });
+    applyUI();
+  </script>
 </body>
 </html>
