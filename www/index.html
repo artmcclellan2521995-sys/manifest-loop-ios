@@ -1,1 +1,120 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"><title>Manifest Loop</title></head><body style="background:#0f0f0f;color:#f5f2eb;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><h1>Manifest Loop Ready</h1></body></html>
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
+<title>Manifest Loop</title>
+<style>
+:root { --bg:#121110; --card:#1c1a18; --text:#f4efe6; --muted:#a89f91; --accent:#c8a97e; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif; padding:calc(env(safe-area-inset-top) + 20px) 20px calc(env(safe-area-inset-bottom) + 28px); min-height:100vh; display:flex; flex-direction:column; justify-content:space-between; }
+.top { display:flex; justify-content:space-between; align-items:center; }
+.brand { font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--accent); }
+.btn-ghost { background:transparent; border:1px solid #332f2a; color:var(--text); padding:6px 12px; border-radius:999px; font-size:12px; }
+.card { background:var(--card); border:1px solid #2b2723; border-radius:24px; padding:28px 22px; margin:24px 0; }
+.tag { font-size:12px; color:var(--accent); margin-bottom:12px; }
+.prompt { font-size:22px; line-height:1.5; font-weight:500; min-height:96px; }
+.meta { margin-top:16px; font-size:13px; color:var(--muted); }
+.actions { display:flex; flex-direction:column; gap:12px; }
+.btn-primary { background:var(--accent); color:#141210; border:none; border-radius:16px; padding:16px; font-size:15px; font-weight:600; }
+.btn-secondary { background:#23201d; color:var(--text); border:1px solid #35302b; border-radius:16px; padding:14px; font-size:14px; }
+.status { text-align:center; font-size:12px; color:var(--muted); margin-top:10px; min-height:18px; }
+</style>
+</head>
+<body>
+<div>
+<div class="top">
+  <div class="brand">MANIFEST LOOP</div>
+  <button class="btn-ghost" id="langBtn">EN / 中文</button>
+</div>
+<div class="card">
+  <div class="tag" id="tagText">第 1 轮 · 潜意识觉察</div>
+  <div class="prompt" id="promptText">我保持清晰的注意力与从容的节奏，把每一个微小承诺兑现为现实。</div>
+  <div class="meta" id="streakText">已完成循环：0 次</div>
+</div>
+</div>
+<div>
+<div class="actions">
+  <button class="btn-primary" id="completeBtn">完成本次显化闭环</button>
+  <button class="btn-secondary" id="remindBtn">开启每日 08:30 觉察提醒</button>
+</div>
+<div class="status" id="statusText">离线本地存储已就绪</div>
+</div>
+<script>
+const loops = [
+  { zh: "我保持清晰的注意力与从容的节奏，把每一个微小承诺兑现为现实。", en: "I hold clear attention and a calm rhythm, turning each small commitment into reality." },
+  { zh: "在安静与秩序之中，我看清真正重要的优先级并稳步推进。", en: "Within stillness and order, I see true priorities clearly and move forward steadily." },
+  { zh: "我的行动与长期目标保持一致，每一次选择都在积累复利。", en: "My actions align with my long-term direction, and every choice compounds." }
+];
+let lang = localStorage.getItem("ml_lang") || "zh";
+let idx = Number(localStorage.getItem("ml_idx") || "0");
+let count = Number(localStorage.getItem("ml_count") || "0");
+function getCapPlugins() {
+  const cap = window.Capacitor;
+  return {
+    Haptics: cap && cap.Plugins && cap.Plugins.Haptics ? cap.Plugins.Haptics : null,
+    LocalNotifications: cap && cap.Plugins && cap.Plugins.LocalNotifications ? cap.Plugins.LocalNotifications : null
+  };
+}
+async function pulseHaptic() {
+  try {
+    const { Haptics } = getCapPlugins();
+    if (Haptics) await Haptics.impact({ style: "MEDIUM" });
+  } catch (_) {}
+}
+function render() {
+  const item = loops[idx % loops.length];
+  document.getElementById("langBtn").textContent = lang === "zh" ? "EN" : "中文";
+  document.getElementById("tagText").textContent = lang === "zh"
+    ? `第 ${(idx % loops.length) + 1} 轮 · 潜意识觉察`
+    : `LOOP ${(idx % loops.length) + 1} · MINDFUL FOCUS`;
+  document.getElementById("promptText").textContent = lang === "zh" ? item.zh : item.en;
+  document.getElementById("streakText").textContent = lang === "zh"
+    ? `已完成循环：${count} 次`
+    : `Completed Loops: ${count}`;
+  document.getElementById("completeBtn").textContent = lang === "zh" ? "完成本次显化闭环" : "Complete Loop";
+  document.getElementById("remindBtn").textContent = lang === "zh" ? "开启每日 08:30 觉察提醒" : "Set Daily 08:30 Reminder";
+}
+document.getElementById("langBtn").addEventListener("click", async () => {
+  lang = lang === "zh" ? "en" : "zh";
+  localStorage.setItem("ml_lang", lang);
+  await pulseHaptic();
+  render();
+});
+document.getElementById("completeBtn").addEventListener("click", async () => {
+  count += 1;
+  idx += 1;
+  localStorage.setItem("ml_count", String(count));
+  localStorage.setItem("ml_idx", String(idx));
+  await pulseHaptic();
+  render();
+  document.getElementById("statusText").textContent = lang === "zh" ? "已记录到本地并切换下一条" : "Saved locally & advanced";
+});
+document.getElementById("remindBtn").addEventListener("click", async () => {
+  await pulseHaptic();
+  const { LocalNotifications } = getCapPlugins();
+  if (!LocalNotifications) {
+    document.getElementById("statusText").textContent = lang === "zh" ? "浏览器预览模式：上架 iOS 后将调用本地提醒" : "Web preview: native alarm runs on iOS";
+    return;
+  }
+  try {
+    const perm = await LocalNotifications.requestPermissions();
+    if (perm.display === "granted") {
+      await LocalNotifications.schedule({
+        notifications: [{
+          id: 1001,
+          title: "Manifest Loop",
+          body: lang === "zh" ? "开启今天的显化觉察循环" : "Start your daily mindful loop",
+          schedule: { on: { hour: 8, minute: 30 }, repeats: true }
+        }]
+      });
+      document.getElementById("statusText").textContent = lang === "zh" ? "已设置每日 08:30 本地提醒" : "Daily 08:30 reminder scheduled";
+    }
+  } catch (e) {
+    document.getElementById("statusText").textContent = String(e.message || e);
+  }
+});
+render();
+</script>
+</body>
+</html>
