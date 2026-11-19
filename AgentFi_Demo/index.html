@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentFi — Interactive HTTP 402 M2M Micro-Clearing Demo</title>
+<style>
+  :root { --bg: #090d16; --card: #111827; --border: #1f2937; --accent: #38bdf8; --green: #10b981; --amber: #f59e0b; --text: #f3f4f6; --muted: #9ca3af; }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+  body { background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 24px 16px; min-height: 100vh; }
+  .wrap { width: 100%; max-width: 720px; }
+  .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px; }
+  .title { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .title span { color: var(--accent); }
+  .badge { background: rgba(16,185,129,0.12); border: 1px solid var(--green); color: var(--green); font-size: 12px; padding: 4px 10px; border-radius: 99px; font-weight: 600; }
+  .desc { color: var(--muted); font-size: 13.5px; line-height: 1.6; margin-bottom: 20px; }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 18px; }
+  .row { display: flex; justify-content: space-between; font-size: 12.5px; padding: 6px 0; border-bottom: 1px dashed #1f2937; }
+  .row:last-child { border-bottom: none; }
+  .lbl { color: var(--muted); }
+  .val { color: #fff; font-weight: 600; text-align: right; word-break: break-all; }
+  .btn { width: 100%; background: linear-gradient(90deg, #0284c7, #2563eb); color: #fff; border: none; padding: 14px; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer; transition: opacity 0.2s; margin-bottom: 18px; }
+  .btn:hover { opacity: 0.92; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .step { border-left: 3px solid var(--border); padding-left: 14px; margin-bottom: 14px; opacity: 0.35; transition: all 0.3s; }
+  .step.active { opacity: 1; border-left-color: var(--accent); }
+  .step.warn { border-left-color: var(--amber); }
+  .step.ok { border-left-color: var(--green); }
+  .step-hd { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  pre { background: #05080f; border: 1px solid #1e293b; padding: 10px; border-radius: 6px; font-size: 11.5px; color: #cbd5e1; overflow-x: auto; line-height: 1.45; }
+  .footer { text-align: center; font-size: 12px; color: var(--muted); margin-top: 24px; }
+  .footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="title">Agent<span>Fi</span> // x402 V2 Playground</div>
+    <div class="badge" id="liveStatus">● RAIL: BASE L2 USDC (8453)</div>
+  </div>
+  <p class="desc">Interactive simulator demonstrating stateless machine-to-machine (M2M) micro-clearing under HTTP 402. Zero-gas offline signature verification, anti-replay Nonce protection, and deterministic SHA-256 payload proofs.</p>
+  <div class="panel">
+    <div class="row"><span class="lbl">Production Endpoint</span><span class="val">https://agentfi.vip/v1/extract</span></div>
+    <div class="row"><span class="lbl">Settlement Asset</span><span class="val">$0.05 USDC (Base Mainnet)</span></div>
+    <div class="row"><span class="lbl">Discovery Spec</span><span class="val">/x402/discovery (MCP Ready)</span></div>
+    <div class="row"><span class="lbl">Custody Model</span><span class="val">Non-Custodial / Zero-Liability</span></div>
+  </div>
+  <button class="btn" id="runBtn" onclick="runSimulation()">▶ Simulate Autonomous AI Agent Request ($0.05 USDC)</button>
+  <div class="step" id="s1">
+    <div class="step-hd" style="color:var(--amber)">STEP 1: Gateway Interception → HTTP 402 Payment Required</div>
+    <pre id="out1">Waiting to initiate request...</pre>
+  </div>
+  <div class="step" id="s2">
+    <div class="step-hd" style="color:var(--accent)">STEP 2: Offline Cryptographic Signature &amp; Nonce Binding</div>
+    <pre id="out2">Waiting for 402 challenge...</pre>
+  </div>
+  <div class="step" id="s3">
+    <div class="step-hd" style="color:var(--green)">STEP 3: HTTP 200 OK → Denoised Matrix + SHA-256 Proof</div>
+    <pre id="out3">Waiting for settlement proof...</pre>
+  </div>
+  <div class="footer">
+    Architected by Yixuan Li (Kelly) · <a href="https://github.com/artmcclellan2521995-sys/agentfi-x402-gateway" target="_blank">GitHub Spec</a> · Contact: artmcclellan2521995@gmail.com
+  </div>
+</div>
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function runSimulation() {
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  ['s1','s2','s3'].forEach(id => document.getElementById(id).className = 'step');
+  const s1 = document.getElementById('s1');
+  s1.className = 'step active warn';
+  document.getElementById('out1').textContent = 'GET https://agentfi.vip/v1/extract ...\n\nHTTP/1.1 402 Payment Required\nX-Protocol-Version: x402-v2\nX-Network-Chain-Id: 8453\nX-Amount-USDC: 0.05\nX-Nonce: 0x9f84c2e1...7b1a';
+  await sleep(650);
+  const s2 = document.getElementById('s2');
+  s2.className = 'step active';
+  document.getElementById('out2').textContent = 'Signing EIP-712 / Base L2 USDC micro-voucher locally (0 gas)...\nAttaching X-Payment-Proof header & retrying request (Idempotent)...';
+  await sleep(700);
+  const s3 = document.getElementById('s3');
+  s3.className = 'step active ok';
+  const now = new Date().toISOString();
+  document.getElementById('out3').textContent = `HTTP/1.1 200 OK (Edge Latency: 184ms)\nX-Payload-Hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\n{\n  "status": "settled",\n  "pair": "CNH/USD",\n  "denoised_mid": 7.2418,\n  "timestamp": "${now}",\n  "anti_replay_locked": true\n}`;
+  btn.disabled = false;
+  btn.textContent = '↻ Run Another Agent Settlement Cycle';
+}
+</script>
+</body>
+</html>
