@@ -69,7 +69,9 @@ jobs:
 
       - name: Export IPA
         run: |
-          cat << 'EOF' > build/ExportOptions.plist
+          PROFILE_PATH="$HOME/Library/MobileDevice/Provisioning Profiles/appstore.mobileprovision"
+          PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | plutil -extract Name raw -o - -)
+          cat << EOF > build/ExportOptions.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -80,6 +82,11 @@ jobs:
             <string>manual</string>
             <key>teamID</key>
             <string>KR4F2829YC</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.interfacehunter.manifestloop</key>
+              <string>${PROFILE_NAME}</string>
+            </dict>
           </dict>
           </plist>
           EOF
