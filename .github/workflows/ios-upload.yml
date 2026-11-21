@@ -39,12 +39,24 @@ jobs:
           npm ci || npm install
           npx cap sync ios
 
+      - name: Force Manual Signing in Xcode Project
+        run: |
+          PROFILE_PATH="$HOME/Library/MobileDevice/Provisioning Profiles/appstore.mobileprovision"
+          PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | plutil -extract Name raw -o - -)
+          echo "Using Profile: $PROFILE_NAME"
+          PBXPROJ="ios/App/App.xcodeproj/project.pbxproj"
+          sed -i '' 's/"iPhone Developer"/"Apple Distribution"/g' "$PBXPROJ"
+          sed -i '' 's/iPhone Developer/Apple Distribution/g' "$PBXPROJ"
+          sed -i '' 's/"iOS Development"/"Apple Distribution"/g' "$PBXPROJ"
+          sed -i '' 's/iOS Development/Apple Distribution/g' "$PBXPROJ"
+          sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' "$PBXPROJ"
+          sed -i '' "s/PROVISIONING_PROFILE_SPECIFIER = [^;]*;/PROVISIONING_PROFILE_SPECIFIER = \"$PROFILE_NAME\";/g" "$PBXPROJ"
+
       - name: Archive iOS App
         run: |
           mkdir -p build
           PROFILE_PATH="$HOME/Library/MobileDevice/Provisioning Profiles/appstore.mobileprovision"
           PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | plutil -extract Name raw -o - -)
-          echo "Using Provisioning Profile Name: $PROFILE_NAME"
           xcodebuild archive \
             -project ios/App/App.xcodeproj \
             -scheme App \
@@ -52,6 +64,7 @@ jobs:
             -archivePath build/App.xcarchive \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM=KR4F2829YC \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
             PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME"
 
       - name: Export IPA
