@@ -10,12 +10,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check private key
+      - name: List files in repo
         run: |
-          mkdir -p ~/.appstoreconnect/private_keys
-          printf '%s' "${{ secrets.APPSTORE_PRIVATE_KEY_B64 }}" | tr -d '[:space:]' | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          head -n 1 ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-
-      - name: List project schemes
-        run: xcodebuild -list
+          pwd
+          ls -la
+          find . -maxdepth 3 -not -path '*/.*'
