@@ -4,14 +4,18 @@ on:
   workflow_dispatch:
 
 jobs:
-  check-project:
+  check-scheme:
     runs-on: macos-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: List files in repo
+      - name: Check private key
         run: |
-          pwd
-          ls -la
-          find . -maxdepth 3 -not -path '*/.*'
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s' "${{ secrets.APPSTORE_PRIVATE_KEY_B64 }}" | tr -d '[:space:]' | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          head -n 1 ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+
+      - name: List iOS schemes
+        run: xcodebuild -list -project ios/App/App.xcodeproj
