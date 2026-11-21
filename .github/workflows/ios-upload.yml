@@ -4,11 +4,17 @@ on:
   workflow_dispatch:
 
 jobs:
-  check-scheme:
+  archive-ios:
     runs-on: macos-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install App Store Connect API Key
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s' "${{ secrets.APPSTORE_PRIVATE_KEY_B64 }}" | tr -d '[:space:]' | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -21,5 +27,11 @@ jobs:
           npm ci || npm install
           npx cap sync ios
 
-      - name: List iOS schemes
-        run: xcodebuild -list -project ios/App/App.xcodeproj
+      - name: Archive iOS App
+        run: |
+          xcodebuild archive \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            CODE_SIGN_STYLE=Automatic
