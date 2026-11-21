@@ -41,13 +41,18 @@ jobs:
 
       - name: Archive iOS App
         run: |
+          mkdir -p build
+          PROFILE_PATH="$HOME/Library/MobileDevice/Provisioning Profiles/appstore.mobileprovision"
+          PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | plutil -extract Name raw -o - -)
+          echo "Using Provisioning Profile Name: $PROFILE_NAME"
           xcodebuild archive \
             -project ios/App/App.xcodeproj \
             -scheme App \
             -configuration Release \
             -archivePath build/App.xcarchive \
             CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM=KR4F2829YC
+            DEVELOPMENT_TEAM=KR4F2829YC \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME"
 
       - name: Export IPA
         run: |
