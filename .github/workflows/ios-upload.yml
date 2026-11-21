@@ -10,12 +10,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check private key
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies and sync Capacitor
         run: |
-          mkdir -p ~/.appstoreconnect/private_keys
-          printf '%s' "${{ secrets.APPSTORE_PRIVATE_KEY_B64 }}" | tr -d '[:space:]' | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-          head -n 1 ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          npm ci || npm install
+          npx cap sync ios
 
       - name: List iOS schemes
         run: xcodebuild -list -project ios/App/App.xcodeproj
